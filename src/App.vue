@@ -1,85 +1,644 @@
-<script setup>
-import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
-</script>
-
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+  <v-app>
+    <div class="sidebar-wrapper" :class="sidebarWrapperClasses">
+      <v-navigation-drawer
+        v-model="drawer"
+        :rail="isMobile ? false : rail"
+        :permanent="!isMobile"
+        :temporary="isMobile"
+        :width="sidebarWidth"
+        :rail-width="railWidth"
+        app
+        class="sidebar"
+        :class="sidebarClasses"
+        @mouseenter="onSidebarHover"
+        @mouseleave="onSidebarLeave"
+      >
+        <div class="sidebar-inner">
+          <div class="sidebar-header" v-if="!rail || isMobile">
+            <div class="logo-section">
+              <h2 v-if="!rail || isMobile" class="logo">HRFlow</h2>
+            </div>
+          </div>
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+          <v-list class="sidebar-nav">
+            <v-list-item
+              v-for="item in navItems"
+              :key="item.title"
+              :prepend-icon="item.icon"
+              :title="rail && !isMobile ? '' : item.title"
+              :to="item.to"
+              :active="isActive(item.to)"
+              class="nav-item"
+              :class="{ 'nav-item-active': isActive(item.to) }"
+            >
+              <template v-slot:prepend>
+                <v-icon :class="{ 'active-icon': isActive(item.to) }">{{ item.icon }}</v-icon>
+              </template>
 
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
+              <v-tooltip v-if="rail && !isMobile" location="right" activator="parent">
+                {{ item.title }}
+              </v-tooltip>
+            </v-list-item>
+          </v-list>
+
+          <div class="sidebar-footer" v-if="!rail || isMobile">
+            <v-list>
+              <v-list-item prepend-icon="mdi-cog" title="Settings" class="nav-item"></v-list-item>
+              <v-list-item prepend-icon="mdi-logout" title="Logout" class="nav-item"></v-list-item>
+            </v-list>
+          </div>
+        </div>
+
+        <div
+          v-if="!isMobile"
+          class="sidebar-rail-hover"
+          @click="toggleRail"
+          @mouseenter="onRailHover"
+          @mouseleave="onRailLeave"
+        >
+      </div>
+      </v-navigation-drawer>
+
+      <v-main class="main-content" :class="mainContentClasses">
+        <v-app-bar :elevation="elevation" class="app-bar" :class="{ 'app-bar-mobile': isMobile }">
+          <v-app-bar-nav-icon v-if="isMobile" @click="drawer = !drawer"></v-app-bar-nav-icon>
+
+          <v-btn v-else icon variant="text" @click="toggleRail" class="desktop-toggle">
+            <v-icon>mdi-menu</v-icon>
+          </v-btn>
+
+          <v-toolbar-title class="toolbar-title">HRFlow</v-toolbar-title>
+
+          <v-spacer></v-spacer>
+
+          <v-text-field
+            density="compact"
+            variant="outlined"
+            placeholder="Search employees, tasks..."
+            prepend-inner-icon="mdi-magnify"
+            single-line
+            hide-details
+            class="search-field"
+            :style="{ width: searchWidth }"
+          ></v-text-field>
+
+          <div class="action-buttons">
+            <v-btn icon class="action-btn">
+              <v-icon>mdi-cog</v-icon>
+            </v-btn>
+
+            <v-menu>
+              <template v-slot:activator="{ props }">
+                <v-btn icon v-bind="props" class="action-btn user-menu-btn">
+                  <v-avatar size="32" color="primary">
+                    <span class="avatar-text">JD</span>
+                  </v-avatar>
+                </v-btn>
+              </template>
+              <v-list>
+                <v-list-item
+                  v-for="item in userMenuItems"
+                  :key="item.title"
+                  :prepend-icon="item.icon"
+                  :title="item.title"
+                  @click="item.action"
+                ></v-list-item>
+              </v-list>
+            </v-menu>
+          </div>
+        </v-app-bar>
+
+        <div class="page-content" :class="pageContentClasses">
+          <router-view />
+        </div>
+      </v-main>
     </div>
-  </header>
-
-  <RouterView />
+  </v-app>
 </template>
 
+<script>
+export default {
+  name: "AppLayout",
+
+  data() {
+    return {
+      drawer: true,
+      rail: false,
+      railHover: false,
+      mobileOpen: false,
+      notifications: 3,
+      elevation: 1,
+      sidebarVariant: "default",
+      navItems: [
+        { icon: "mdi-view-dashboard", title: "Dashboard", to: "/" },
+        { icon: "mdi-account-group", title: "Employees", to: "#" },
+        { icon: "mdi-calendar-check", title: "Attendance", to: "#" },
+        { icon: "mdi-file-document", title: "Documents", to: "#" },
+        { icon: "mdi-chart-bar", title: "Reports", to: "#" },
+        { icon: "mdi-cash", title: "Payroll", to: "#" },
+        { icon: "mdi-calendar", title: "Leave", to: "#" },
+      ],
+      userMenuItems: [
+        { icon: "mdi-account", title: "Profile", action: () => this.onProfileClick() },
+        { icon: "mdi-cog", title: "Settings", action: () => this.onSettingsClick() },
+        { icon: "mdi-logout", title: "Logout", action: () => this.onLogoutClick() },
+      ],
+    };
+  },
+
+  computed: {
+    isMobile() {
+      return this.$vuetify.display.mobile;
+    },
+
+    isTablet() {
+      return this.$vuetify.display.tablet;
+    },
+
+    sidebarWidth() {
+      if (this.isMobile) return "256";
+      return this.rail ? "72" : "256";
+    },
+
+    railWidth() {
+      return "72";
+    },
+
+    searchWidth() {
+      if (this.isMobile) return "160px";
+      if (this.isTablet) return "200px";
+      return "300px";
+    },
+
+    sidebarWrapperClasses() {
+      return {
+        "sidebar-wrapper-collapsed": this.rail && !this.isMobile,
+        "sidebar-wrapper-expanded": !this.rail && !this.isMobile,
+        "sidebar-wrapper-mobile": this.isMobile,
+      };
+    },
+
+    sidebarClasses() {
+      return {
+        "sidebar-collapsed": this.rail && !this.isMobile,
+        "sidebar-expanded": !this.rail && !this.isMobile,
+        "sidebar-floating": this.sidebarVariant === "floating",
+        "sidebar-inset": this.sidebarVariant === "inset",
+        "sidebar-rail-hover": this.railHover,
+      };
+    },
+
+    mainContentClasses() {
+      return {
+        "main-content-collapsed": this.rail && !this.isMobile,
+        "main-content-expanded": !this.rail && !this.isMobile,
+        "main-content-inset": this.sidebarVariant === "inset",
+        "main-content-mobile": this.isMobile,
+      };
+    },
+
+    pageContentClasses() {
+      return {
+        "page-content-with-sidebar": !this.isMobile,
+        "page-content-mobile": this.isMobile,
+      };
+    },
+  },
+
+  watch: {
+    isMobile: {
+      immediate: true,
+      handler(newValue) {
+        if (newValue) {
+          this.drawer = false;
+          this.rail = false;
+          this.elevation = 2;
+        } else {
+          this.drawer = true;
+          this.elevation = 1;
+        }
+      },
+    },
+
+    rail(newValue) {
+      if (!this.isMobile) {
+        localStorage.setItem("sidebarRail", JSON.stringify(newValue));
+      }
+    },
+
+    $route() {
+      if (this.isMobile) {
+        this.drawer = false;
+      }
+    },
+  },
+
+  mounted() {
+    this.loadSidebarState();
+
+    this.addKeyboardShortcut();
+
+    window.addEventListener("resize", this.handleResize);
+  },
+
+  beforeUnmount() {
+    window.removeEventListener("resize", this.handleResize);
+  },
+
+  methods: {
+    isActive(route) {
+      return this.$route.path === route;
+    },
+
+    toggleRail() {
+      if (this.isMobile) {
+        this.drawer = !this.drawer;
+      } else {
+        this.rail = !this.rail;
+      }
+    },
+
+    onSidebarHover() {
+      if (this.rail && !this.isMobile) {
+        this.railHover = true;
+      }
+    },
+
+    onSidebarLeave() {
+      this.railHover = false;
+    },
+
+    onRailHover() {
+      if (this.rail && !this.isMobile) {
+        this.railHover = true;
+      }
+    },
+
+    onRailLeave() {
+      this.railHover = false;
+    },
+
+    onProfileClick() {
+      this.$router.push("/profile");
+    },
+
+    onSettingsClick() {
+      this.$router.push("/settings");
+    },
+
+    onLogoutClick() {},
+
+    loadSidebarState() {
+      if (!this.isMobile) {
+        const savedRail = localStorage.getItem("sidebarRail");
+        if (savedRail !== null) {
+          this.rail = JSON.parse(savedRail);
+        }
+      }
+    },
+
+    addKeyboardShortcut() {
+      document.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "b") {
+          e.preventDefault();
+          this.toggleRail();
+        }
+
+        if (e.key === "Escape" && this.isMobile && this.drawer) {
+          this.drawer = false;
+        }
+      });
+    },
+
+    handleResize() {
+      if (!this.isMobile && this.drawer === false) {
+        this.drawer = true;
+      }
+    },
+
+    setSidebarVariant(variant) {
+      this.sidebarVariant = variant;
+      localStorage.setItem("sidebarVariant", variant);
+    },
+  },
+};
+</script>
+
 <style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
+/* Sidebar Wrapper */
+.sidebar-wrapper {
+  min-height: 100vh;
+  display: flex;
+  transition: all 0.3s ease;
+}
+
+/* Sidebar Styles */
+.sidebar {
+  border-right: 1px solid rgba(0, 0, 0, 0.12);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
+}
+
+.sidebar-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+/* Sidebar Header */
+.sidebar-header {
+  padding: 16px 16px 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  margin-bottom: 8px;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .logo {
-  display: block;
-  margin: 0 auto 2rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  color: rgb(var(--v-theme-primary));
+  transition: opacity 0.3s ease;
 }
 
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
+.toggle-btn {
+  transform: rotate(0deg);
+  transition: transform 0.3s ease;
 }
 
-nav a.router-link-exact-active {
-  color: var(--color-text);
+.sidebar-collapsed .toggle-btn {
+  transform: rotate(180deg);
 }
 
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
+/* Navigation Items */
+.sidebar-nav {
+  flex: 1;
+  padding: 0 8px;
 }
 
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
+.nav-item {
+  border-radius: 8px;
+  margin: 2px 0;
+  transition: all 0.2s ease;
+  min-height: 44px;
 }
 
-nav a:first-of-type {
-  border: 0;
+.nav-item:hover {
+  background-color: rgba(var(--v-theme-primary), 0.08);
 }
 
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
+.nav-item-active {
+  background-color: rgba(var(--v-theme-primary), 0.12) !important;
+  color: rgb(var(--v-theme-primary)) !important;
+}
+
+.nav-item-active .v-list-item-title {
+  font-weight: 600;
+}
+
+.active-icon {
+  color: rgb(var(--v-theme-primary)) !important;
+}
+
+/* Sidebar Footer */
+.sidebar-footer {
+  padding: 8px 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  margin-top: auto;
+}
+
+/* Sidebar Rail Hover Area */
+.sidebar-rail-hover {
+  position: absolute;
+  top: 0;
+  right: -8px;
+  width: 16px;
+  height: 100%;
+  cursor: pointer;
+  z-index: 2;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-rail-hover:hover::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 100%;
+  background-color: rgba(var(--v-theme-primary), 0.3);
+  border-radius: 1px;
+}
+
+/* Main Content */
+.main-content {
+  background-color: #f8fafc;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 100vh;
+}
+
+.main-content-inset {
+  margin: 16px;
+  margin-left: calc(var(--sidebar-width, 256px) + 16px);
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.main-content-collapsed.main-content-inset {
+  margin-left: calc(72px + 16px);
+}
+
+/* App Bar */
+.app-bar {
+  background-color: white !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(8px);
+}
+
+.app-bar-mobile {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.toolbar-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.search-field {
+  max-width: 300px;
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.action-btn {
+  position: relative;
+}
+
+.user-menu-btn {
+  margin-left: 8px;
+}
+
+.avatar-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+}
+
+/* Page Content */
+.page-content {
+  padding: 24px;
+  min-height: calc(100vh - 64px);
+}
+
+.page-content-with-sidebar {
+  padding-left: calc(var(--sidebar-width, 256px) + 24px);
+  transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-collapsed ~ .main-content .page-content-with-sidebar {
+  padding-left: calc(72px + 24px);
+}
+
+.page-content-mobile {
+  padding: 16px;
+}
+
+/* Floating Variant */
+.sidebar-floating {
+  margin: 8px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  height: calc(100vh - 16px);
+}
+
+.sidebar-floating.sidebar-collapsed {
+  margin: 8px;
+  width: 72px !important;
+}
+
+/* Custom Scrollbar */
+.sidebar-inner::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-inner::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-inner::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+.sidebar-inner::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Mobile Optimizations */
+@media (max-width: 960px) {
+  .main-content {
+    margin-left: 0 !important;
   }
 
-  .logo {
-    margin: 0 2rem 0 0;
+  .page-content {
+    padding: 16px;
   }
 
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
+  .sidebar {
+    z-index: 1000;
   }
 
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
+  .search-field {
+    max-width: 160px;
   }
+
+  .toolbar-title {
+    font-size: 1.125rem;
+  }
+}
+
+/* Tablet Optimizations */
+@media (min-width: 961px) and (max-width: 1264px) {
+  .search-field {
+    max-width: 200px;
+  }
+}
+
+/* Animation Classes */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  transform: translateX(-100%);
+}
+
+/* CSS Variables for dynamic calculations */
+:root {
+  --sidebar-width: 256px;
+}
+
+.sidebar-collapsed {
+  --sidebar-width: 72px;
+}
+</style>
+
+<style>
+/* Global Styles */
+.v-list-item__prepend {
+  margin-right: 12px;
+}
+
+.v-list-item--active .v-list-item__prepend .v-icon {
+  color: inherit !important;
+}
+
+/* Better focus states */
+.v-btn:focus-visible {
+  outline: 2px solid rgba(var(--v-theme-primary), 0.5);
+  outline-offset: 2px;
+}
+
+/* Improve badge positioning */
+.v-badge__badge {
+  font-size: 10px;
+  min-width: 18px;
+  height: 18px;
+}
+
+/* Better tooltip for collapsed sidebar */
+.v-tooltip__content {
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
 }
 </style>
