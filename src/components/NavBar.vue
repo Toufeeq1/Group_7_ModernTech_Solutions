@@ -1,3 +1,112 @@
+<template>
+  <v-app>
+    <v-navigation-drawer
+      v-model="drawer"
+      :rail="isMobile ? false : rail"
+      :permanent="!isMobile"
+      :temporary="isMobile"
+      :width="sidebarWidth"
+      :rail-width="railWidth"
+      app
+      class="sidebar"
+      @mouseenter="onSidebarHover"
+      @mouseleave="onSidebarLeave"
+    >
+      <div class="sidebar-inner">
+        <div class="sidebar-header" v-if="!rail || isMobile">
+          <div class="logo-section">
+            <h2 v-if="!rail || isMobile" class="logo">HRFlow</h2>
+          </div>
+        </div>
+        <v-list class="sidebar-nav">
+          <v-list-item
+            v-for="item in navItems"
+            :key="item.title"
+            :prepend-icon="item.icon"
+            :title="rail && !isMobile ? '' : item.title"
+            :to="item.to"
+            :active="isActive(item.to)"
+            class="nav-item"
+            :class="{ 'nav-item-active': isActive(item.to) }"
+          >
+            <template v-slot:prepend>
+              <v-icon :class="{ 'active-icon': isActive(item.to) }">{{ item.icon }}</v-icon>
+            </template>
+            <v-tooltip v-if="rail && !isMobile" location="right" activator="parent">
+              {{ item.title }}
+            </v-tooltip>
+          </v-list-item>
+        </v-list>
+        <div class="sidebar-footer" v-if="!rail || isMobile">
+          <v-list>
+            <v-list-item prepend-icon="mdi-cog" title="Settings" class="nav-item"></v-list-item>
+            <v-list-item prepend-icon="mdi-logout" title="Logout" class="nav-item"></v-list-item>
+          </v-list>
+        </div>
+      </div>
+      <div
+        v-if="!isMobile"
+        class="sidebar-rail-hover"
+        @click="toggleRail"
+        @mouseenter="onRailHover"
+        @mouseleave="onRailLeave"
+      ></div>
+    </v-navigation-drawer>
+
+    <v-app-bar
+      :elevation="elevation"
+      class="app-bar"
+      :class="{ 'app-bar-mobile': isMobile }"
+      app
+    >
+      <v-app-bar-nav-icon v-if="isMobile" @click="drawer = !drawer"></v-app-bar-nav-icon>
+      <v-btn v-else icon variant="text" @click="toggleRail" class="desktop-toggle">
+        <v-icon>mdi-menu</v-icon>
+      </v-btn>
+      <v-toolbar-title class="toolbar-title">HRFlow</v-toolbar-title>
+      <v-spacer></v-spacer>
+      <v-text-field
+        density="compact"
+        variant="outlined"
+        placeholder="Search employees, tasks..."
+        prepend-inner-icon="mdi-magnify"
+        single-line
+        hide-details
+        class="search-field"
+        :style="{ width: searchWidth }"
+      ></v-text-field>
+      <div class="action-buttons">
+        <v-btn icon class="action-btn">
+          <v-icon>mdi-cog</v-icon>
+        </v-btn>
+        <v-menu>
+          <template v-slot:activator="{ props }">
+            <v-btn icon v-bind="props" class="action-btn user-menu-btn">
+              <v-avatar size="32" color="primary">
+                <span class="avatar-text">JD</span>
+              </v-avatar>
+            </v-btn>
+          </template>
+          <v-list>
+            <v-list-item
+              v-for="item in userMenuItems"
+              :key="item.title"
+              :prepend-icon="item.icon"
+              :title="item.title"
+            ></v-list-item>
+          </v-list>
+        </v-menu>
+      </div>
+    </v-app-bar>
+
+    <v-main class="main-content" :class="mainContentClasses">
+      <div class="page-content" :class="pageContentClasses">
+        <router-view />
+      </div>
+    </v-main>
+  </v-app>
+</template>
+
 <script>
 export default {
   name: "NavBar",
@@ -6,10 +115,7 @@ export default {
       drawer: true,
       rail: false,
       railHover: false,
-      mobileOpen: false,
-      notifications: 3,
       elevation: 1,
-      sidebarVariant: "default",
       navItems: [
         { icon: "mdi-view-dashboard", title: "Dashboard", to: "/" },
         { icon: "mdi-account-group", title: "Employees", to: "#" },
@@ -21,8 +127,8 @@ export default {
       ],
       userMenuItems: [
         { icon: "mdi-account", title: "Profile" },
-        { icon: "mdi-cog", title: "Settings"},
-        { icon: "mdi-logout", title: "Logout"},
+        { icon: "mdi-cog", title: "Settings" },
+        { icon: "mdi-logout", title: "Logout" },
       ],
     };
   },
@@ -34,38 +140,21 @@ export default {
       return this.$vuetify.display.tablet;
     },
     sidebarWidth() {
-      if (this.isMobile) return "256";
-      return this.rail ? "72" : "256";
+      if (this.isMobile) return 256;
+      return this.rail ? 72 : 256;
     },
     railWidth() {
-      return "72";
+      return 72;
     },
     searchWidth() {
       if (this.isMobile) return "160px";
       if (this.isTablet) return "200px";
       return "300px";
     },
-    sidebarWrapperClasses() {
-      return {
-        "sidebar-wrapper-collapsed": this.rail && !this.isMobile,
-        "sidebar-wrapper-expanded": !this.rail && !this.isMobile,
-        "sidebar-wrapper-mobile": this.isMobile,
-      };
-    },
-    sidebarClasses() {
-      return {
-        "sidebar-collapsed": this.rail && !this.isMobile,
-        "sidebar-expanded": !this.rail && !this.isMobile,
-        "sidebar-floating": this.sidebarVariant === "floating",
-        "sidebar-inset": this.sidebarVariant === "inset",
-        "sidebar-rail-hover": this.railHover,
-      };
-    },
     mainContentClasses() {
       return {
         "main-content-collapsed": this.rail && !this.isMobile,
         "main-content-expanded": !this.rail && !this.isMobile,
-        "main-content-inset": this.sidebarVariant === "inset",
         "main-content-mobile": this.isMobile,
       };
     },
@@ -90,24 +179,11 @@ export default {
         }
       },
     },
-    rail(newValue) {
-      if (!this.isMobile) {
-        localStorage.setItem("sidebarRail", JSON.stringify(newValue));
-      }
-    },
     $route() {
       if (this.isMobile) {
         this.drawer = false;
       }
     },
-  },
-  mounted() {
-    this.loadSidebarState();
-    this.addKeyboardShortcut();
-    window.addEventListener("resize", this.handleResize);
-  },
-  beforeUnmount() {
-    window.removeEventListener("resize", this.handleResize);
   },
   methods: {
     isActive(route) {
@@ -136,158 +212,11 @@ export default {
     onRailLeave() {
       this.railHover = false;
     },
-    onProfileClick() {
-      this.$router.push("/profile");
-    },
-    onSettingsClick() {
-      this.$router.push("/settings");
-    },
-    onLogoutClick() {},
-    loadSidebarState() {
-      if (!this.isMobile) {
-        const savedRail = localStorage.getItem("sidebarRail");
-        if (savedRail !== null) {
-          this.rail = JSON.parse(savedRail);
-        }
-      }
-    },
-    addKeyboardShortcut() {
-      document.addEventListener("keydown", (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === "b") {
-          e.preventDefault();
-          this.toggleRail();
-        }
-        if (e.key === "Escape" && this.isMobile && this.drawer) {
-          this.drawer = false;
-        }
-      });
-    },
-    handleResize() {
-      if (!this.isMobile && this.drawer === false) {
-        this.drawer = true;
-      }
-    },
-    setSidebarVariant(variant) {
-      this.sidebarVariant = variant;
-      localStorage.setItem("sidebarVariant", variant);
-    },
   },
 };
 </script>
 
-<template>
-  <v-app>
-    <div class="sidebar-wrapper" :class="sidebarWrapperClasses">
-      <v-navigation-drawer
-        v-model="drawer"
-        :rail="isMobile ? false : rail"
-        :permanent="!isMobile"
-        :temporary="isMobile"
-        :width="sidebarWidth"
-        :rail-width="railWidth"
-        app
-        class="sidebar"
-        :class="sidebarClasses"
-        @mouseenter="onSidebarHover"
-        @mouseleave="onSidebarLeave"
-      >
-        <div class="sidebar-inner">
-          <div class="sidebar-header" v-if="!rail || isMobile">
-            <div class="logo-section">
-              <h2 v-if="!rail || isMobile" class="logo">HRFlow</h2>
-            </div>
-          </div>
-          <v-list class="sidebar-nav">
-            <v-list-item
-              v-for="item in navItems"
-              :key="item.title"
-              :prepend-icon="item.icon"
-              :title="rail && !isMobile ? '' : item.title"
-              :to="item.to"
-              :active="isActive(item.to)"
-              class="nav-item"
-              :class="{ 'nav-item-active': isActive(item.to) }"
-            >
-              <template v-slot:prepend>
-                <v-icon :class="{ 'active-icon': isActive(item.to) }">{{ item.icon }}</v-icon>
-              </template>
-              <v-tooltip v-if="rail && !isMobile" location="right" activator="parent">
-                {{ item.title }}
-              </v-tooltip>
-            </v-list-item>
-          </v-list>
-          <div class="sidebar-footer" v-if="!rail || isMobile">
-            <v-list>
-              <v-list-item prepend-icon="mdi-cog" title="Settings" class="nav-item"></v-list-item>
-              <v-list-item prepend-icon="mdi-logout" title="Logout" class="nav-item"></v-list-item>
-            </v-list>
-          </div>
-        </div>
-        <div
-          v-if="!isMobile"
-          class="sidebar-rail-hover"
-          @click="toggleRail"
-          @mouseenter="onRailHover"
-          @mouseleave="onRailLeave"
-        >
-      </div>
-      </v-navigation-drawer>
-      <v-main class="main-content" :class="mainContentClasses">
-        <v-app-bar :elevation="elevation" class="app-bar" :class="{ 'app-bar-mobile': isMobile }">
-          <v-app-bar-nav-icon v-if="isMobile" @click="drawer = !drawer"></v-app-bar-nav-icon>
-          <v-btn v-else icon variant="text" @click="toggleRail" class="desktop-toggle">
-            <v-icon>mdi-menu</v-icon>
-          </v-btn>
-          <v-toolbar-title class="toolbar-title">HRFlow</v-toolbar-title>
-          <v-spacer></v-spacer>
-          <v-text-field
-            density="compact"
-            variant="outlined"
-            placeholder="Search employees, tasks..."
-            prepend-inner-icon="mdi-magnify"
-            single-line
-            hide-details
-            class="search-field"
-            :style="{ width: searchWidth }"
-          ></v-text-field>
-          <div class="action-buttons">
-            <v-btn icon class="action-btn">
-              <v-icon>mdi-cog</v-icon>
-            </v-btn>
-            <v-menu>
-              <template v-slot:activator="{ props }">
-                <v-btn icon v-bind="props" class="action-btn user-menu-btn">
-                  <v-avatar size="32" color="primary">
-                    <span class="avatar-text">JD</span>
-                  </v-avatar>
-                </v-btn>
-              </template>
-              <v-list>
-                <v-list-item
-                  v-for="item in userMenuItems"
-                  :key="item.title"
-                  :prepend-icon="item.icon"
-                  :title="item.title"
-                  @click="item.action"
-                ></v-list-item>
-              </v-list>
-            </v-menu>
-          </div>
-        </v-app-bar>
-        <div class="page-content" :class="pageContentClasses">
-          <router-view />
-        </div>
-      </v-main>
-    </div>
-  </v-app>
-</template>
-
 <style scoped>
-.sidebar-wrapper {
-  min-height: 100vh;
-  display: flex;
-  transition: all 0.3s ease;
-}
 .sidebar {
   border-right: 1px solid rgba(0, 0, 0, 0.12);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -346,13 +275,11 @@ export default {
 .active-icon {
   color: rgb(var(--v-theme-primary)) !important;
 }
-
 .sidebar-footer {
   padding: 8px 16px;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   margin-top: auto;
 }
-
 .sidebar-rail-hover {
   position: absolute;
   top: 0;
@@ -363,24 +290,17 @@ export default {
   z-index: 2;
   transition: background-color 0.2s ease;
 }
-
-
 .main-content {
   background-color: #f8fafc;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 100vh;
 }
-.main-content-inset {
-  margin: 16px;
-  margin-left: calc(var(--sidebar-width, 256px) + 16px);
-  border-radius: 12px;
-  background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.main-content-collapsed {
+  margin-left: 72px;
 }
-.main-content-collapsed.main-content-inset {
-  margin-left: calc(72px + 16px);
+.main-content-expanded {
+  margin-left: 256px;
 }
-
 .app-bar {
   background-color: white !important;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
@@ -413,7 +333,6 @@ export default {
   font-weight: 600;
   color: white;
 }
-
 .page-content {
   padding: 24px;
   min-height: calc(100vh - 64px);
@@ -422,39 +341,9 @@ export default {
   padding-left: calc(var(--sidebar-width, 256px) + 24px);
   transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.sidebar-collapsed ~ .main-content .page-content-with-sidebar {
-  padding-left: calc(72px + 24px);
-}
 .page-content-mobile {
   padding: 16px;
 }
-
-.sidebar-floating {
-  margin: 8px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  height: calc(100vh - 16px);
-}
-.sidebar-floating.sidebar-collapsed {
-  margin: 8px;
-  width: 72px !important;
-}
-
-.sidebar-inner::-webkit-scrollbar {
-  width: 4px;
-}
-.sidebar-inner::-webkit-scrollbar-track {
-  background: transparent;
-}
-.sidebar-inner::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 2px;
-}
-.sidebar-inner::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);
-}
-
 @media (max-width: 960px) {
   .main-content {
     margin-left: 0 !important;
@@ -472,34 +361,9 @@ export default {
     font-size: 1.125rem;
   }
 }
-
 @media (min-width: 961px) and (max-width: 1264px) {
   .search-field {
     max-width: 200px;
   }
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-.slide-enter-active,
-.slide-leave-active {
-  transition: transform 0.3s ease;
-}
-.slide-enter-from,
-.slide-leave-to {
-  transform: translateX(-100%);
-}
-
-:root {
-  --sidebar-width: 256px;
-}
-.sidebar-collapsed {
-  --sidebar-width: 72px;
 }
 </style>
