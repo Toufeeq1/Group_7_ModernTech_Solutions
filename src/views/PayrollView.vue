@@ -14,13 +14,10 @@ export default {
 </script>
 
 <template>
-  {{ console.log(payroll) }}
   <div>
     <TableList
       :payrollData="employees"
       :employees="employees"
-      @edit-payroll="handleEditPayroll"
-      @delete-payroll="handleDeletePayroll"
     />
   </div>
 </template>
