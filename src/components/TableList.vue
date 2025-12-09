@@ -206,34 +206,34 @@ export default {
             </template>
 
             <template #item="{ item }" v-if="$vuetify.display.mobile">
-              <tr>
-                <td colspan="4" class="pa-2">
-                  <div class="d-flex align-center">
-                    <v-avatar size="40" class="me-3" color="primary">
-                      <span class="white--text">{{ item.name.charAt(0) }}</span>
-                    </v-avatar>
-                    <div class="flex-grow-1">
-                      <div class="font-weight-medium">{{ item.name }}</div>
-                      <div class="text-caption d-flex justify-space-between mt-1">
-                        <span>{{ item.position }}</span>
-                        <v-chip size="x-small" color="blue" text-color="white">
-                          {{ item.department }}
-                        </v-chip>
-                      </div>
-                    </div>
-                    <v-btn
-                      size="small"
-                      color="primary"
-                      variant="flat"
-                      @click="generatePayslip(item)"
-                      class="ml-2 text-none"
-                    >
-                      Generate
-                    </v-btn>
-                  </div>
-                </td>
-              </tr>
-            </template>
+  <tr>
+    <td colspan="4" class="pa-2">
+      <div class="d-flex align-center">
+        <v-avatar size="40" class="me-3" color="primary">
+          <span class="white--text">{{ item.name.charAt(0) }}</span>
+        </v-avatar>
+        <div class="grow">
+          <div class="font-weight-medium">{{ item.name }}</div>
+          <div class="text-caption d-flex justify-space-evenly mt-1">
+            <span>{{ item.position }}</span>
+            <v-chip size="x-small" color="blue" text-color="white">
+              {{ item.department }}
+            </v-chip>
+          </div>
+        </div>
+        <v-btn
+          size="small"
+          color="primary"
+          variant="flat"
+          @click="generatePayslip(item)"
+          class="ml-2 text-none"
+        >
+          Generate
+        </v-btn>
+      </div>
+    </td>
+  </tr>
+</template>
           </v-data-table>
         </v-card-text>
       </v-card>
@@ -268,11 +268,15 @@ export default {
     font-size: 1rem !important;
   }
   .v-data-table {
-    font-size: 0.875rem;
+    width: 100%;
+  }
+  .v-data-table__mobile-table-row td {
+    padding: 12px;
   }
   .v-btn {
-    padding: 0 8px;
-    min-width: 0;
+    min-width: unset;
+    padding: 0 12px;
   }
 }
+
 </style>
