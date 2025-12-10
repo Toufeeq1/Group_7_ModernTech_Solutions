@@ -1,9 +1,13 @@
 <script>
 import NavBar from '@/components/NavBar.vue'
-
+import EmployeeData from './components/EmployeeData.vue';
 export default {
-  components: { NavBar }
-}
+  name: 'App',
+  components: {
+    NavBar,
+  },
+};
+
 </script>
 
 <template>
