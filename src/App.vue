@@ -1,5 +1,5 @@
 <script>
-import NavBar from './components/NavBar.vue';
+import NavBar from '@/components/NavBar.vue'
 import EmployeeData from './components/EmployeeData.vue';
 export default {
   name: 'App',
@@ -11,8 +11,11 @@ export default {
 </script>
 
 <template>
-    <EmployeeData />
+  <v-app>
+    <NavBar>
+      <router-view />
+    </NavBar>
+  </v-app>
 </template>
 
-<style>
-</style>
+
