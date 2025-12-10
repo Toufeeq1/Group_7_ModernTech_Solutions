@@ -11,7 +11,7 @@ export default {
 
       navItems: [
         { icon: "mdi-view-dashboard", title: "Dashboard", to: "/" },
-        { icon: "mdi-account-group", title: "Employees", to: "#" },
+        { icon: "mdi-account-group", title: "Employees", to: "/Employees" },
         { icon: "mdi-calendar-check", title: "Attendance", to: "#" },
         { icon: "mdi-file-document", title: "Documents", to: "#" },
         { icon: "mdi-chart-bar", title: "Reports", to: "#" },

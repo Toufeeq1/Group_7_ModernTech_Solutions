@@ -26,10 +26,9 @@ export default {
     ...mapState(["employees"]),
     itemsWithUniqueIds() {
       return (this.employees || []).map((employee) => {
-        // Find matching payroll data for this employee
+
         const payrollInfo = this.payrollData?.find(p => p.employeeId === employee.employeeId) || {};
 
-        // Calculate total hours from attendance if available, otherwise use hoursWorked from payroll data
         const totalHours = employee.attendance
           ? employee.attendance.reduce((total, day) => total + (day.hoursWorked || 0), 0)
           : payrollInfo.hoursWorked || 0;
@@ -40,8 +39,8 @@ export default {
           uniqueId: employee.employeeId
             ? `emp-${employee.employeeId}`
             : `emp-${Math.random().toString(36).substr(2, 9)}`,
-          totalHours: totalHours, // Use the calculated total hours
-          hoursWorked: payrollInfo.hoursWorked || 0, // Add hoursWorked from payroll data
+          totalHours: totalHours, 
+          hoursWorked: payrollInfo.hoursWorked || 0, 
         };
       });
     },
@@ -80,7 +79,6 @@ export default {
         doc.setLineWidth(0.5);
         doc.line(20, 45, 190, 45);
 
-        // Employee Information
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
         doc.text(`Employee ID: ${employee.employeeId || "N/A"}`, 20, 55);
@@ -96,13 +94,12 @@ export default {
           83
         );
 
-        // Earnings Section
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.text("Earnings", 20, 100);
         doc.setDrawColor(22, 78, 99);
         doc.setFillColor(240, 248, 255);
-        doc.rect(20, 105, 80, 45, "FD"); // Increased height for more items
+        doc.rect(20, 105, 80, 45, "FD"); 
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         doc.text("Description", 25, 112);
@@ -110,15 +107,15 @@ export default {
         doc.setDrawColor(200, 200, 200);
         doc.line(25, 114, 95, 114);
 
-        // Basic Salary
+       
         doc.text("Basic Salary", 25, 121);
         doc.text(`R${employee.salary?.toLocaleString() || "0"}`, 95, 121, { align: "right" });
 
-        // Hours Worked
+     
         doc.text("Hours Worked", 25, 128);
         doc.text(`${employee.hoursWorked || 0}`, 95, 128, { align: "right" });
 
-        // Leave Deductions
+      
         doc.text("Leave Deductions", 25, 135);
         doc.text(`${employee.leaveDeductions || 0}`, 95, 135, { align: "right" });
 
@@ -129,7 +126,6 @@ export default {
         doc.text("Total", 25, 143);
         doc.text(`R${employee.finalSalary?.toLocaleString() || "0"}`, 95, 143, { align: "right" });
 
-        // Deductions Section
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.text("Deductions", 110, 100);
@@ -154,7 +150,7 @@ export default {
         doc.text("Total", 115, 136);
         doc.text("R0", 185, 136, { align: "right" });
 
-        // Net Pay
+        
         doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
         doc.setFillColor(22, 78, 99);
@@ -164,7 +160,6 @@ export default {
           align: "center",
         });
 
-        // Footer
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
