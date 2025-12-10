@@ -16,7 +16,7 @@ export default {
 <template>
   <div>
     <TableList
-      :payrollData="employees"
+      :payrollData="payroll"
       :employees="employees"
     />
   </div>

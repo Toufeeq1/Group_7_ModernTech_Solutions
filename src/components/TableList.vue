@@ -1,54 +1,205 @@
 <script>
 import { mapState } from "vuex";
+import { jsPDF } from "jspdf";
 
 export default {
   name: "PayrollView",
-
+  props: {
+    payrollData: Array
+  },
   data() {
     return {
+      dialog: false,
+      selectedEmployee: null,
       headers: [
         { title: "Name", key: "name", sortable: true },
         { title: "Position", key: "position", sortable: true },
         { title: "Department", key: "department", sortable: true },
-        { title: "Actions", key: "actions", sortable: false, align: "center" },
+        { title: "Payslip", key: "actions", sortable: false, align: "center" },
       ],
       search: "",
       itemsPerPage: 10,
       currentPage: 1,
     };
   },
-
   computed: {
     ...mapState(["employees"]),
-
     itemsWithUniqueIds() {
-      return this.employees.map((employee, index) => ({
-        ...employee,
-        uniqueId: employee.employeeId ? `emp-${employee.employeeId}` : `emp-${index}-${Date.now()}`
-      }));
-    },
+      return (this.employees || []).map((employee) => {
+        // Find matching payroll data for this employee
+        const payrollInfo = this.payrollData?.find(p => p.employeeId === employee.employeeId) || {};
 
+        // Calculate total hours from attendance if available, otherwise use hoursWorked from payroll data
+        const totalHours = employee.attendance
+          ? employee.attendance.reduce((total, day) => total + (day.hoursWorked || 0), 0)
+          : payrollInfo.hoursWorked || 0;
+
+        return {
+          ...employee,
+          ...payrollInfo,
+          uniqueId: employee.employeeId
+            ? `emp-${employee.employeeId}`
+            : `emp-${Math.random().toString(36).substr(2, 9)}`,
+          totalHours: totalHours, // Use the calculated total hours
+          hoursWorked: payrollInfo.hoursWorked || 0, // Add hoursWorked from payroll data
+        };
+      });
+    },
     totalPayroll() {
-      return this.employees.reduce((sum, employee) => sum + (employee.salary || 0), 0);
+      return (this.payrollData || []).reduce((sum, employee) => sum + (employee.finalSalary || 0), 0);
     },
-
     employeesProcessed() {
-      return this.employees.length;
+      return (this.employees || []).length;
     },
-
     nextPayrollDate() {
       const now = new Date();
       const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      return nextMonth.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    }
+      return nextMonth.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+    },
   },
-
   methods: {
     generatePayslip(employee) {
-      console.log("Generating payslip for:", employee);
-      alert(`Generating payslip for ${employee.name}`);
+      if (!employee) return;
+
+      try {
+        const doc = new jsPDF();
+        doc.setFontSize(18);
+        doc.setFont("helvetica", "bold");
+        doc.text("Your Company Name", 105, 15, { align: "center" });
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "normal");
+        doc.text("123 Company Address, City, Country", 105, 22, { align: "center" });
+        doc.text("Payroll Department", 105, 29, { align: "center" });
+        doc.setFontSize(16);
+        doc.setFont("helvetica", "bold");
+        doc.text("PAYSLIP", 105, 40, { align: "center" });
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.5);
+        doc.line(20, 45, 190, 45);
+
+        // Employee Information
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Employee ID: ${employee.employeeId || "N/A"}`, 20, 55);
+        doc.text(`Name: ${employee.name}`, 20, 62);
+        doc.text(`Position: ${employee.position}`, 20, 69);
+        doc.text(`Department: ${employee.department}`, 20, 76);
+        doc.text(
+          `Pay Period: ${new Date().toLocaleDateString("en-US", {
+            month: "long",
+            year: "numeric",
+          })}`,
+          20,
+          83
+        );
+
+        // Earnings Section
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Earnings", 20, 100);
+        doc.setDrawColor(22, 78, 99);
+        doc.setFillColor(240, 248, 255);
+        doc.rect(20, 105, 80, 45, "FD"); // Increased height for more items
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text("Description", 25, 112);
+        doc.text("Amount", 85, 112, { align: "right" });
+        doc.setDrawColor(200, 200, 200);
+        doc.line(25, 114, 95, 114);
+
+        // Basic Salary
+        doc.text("Basic Salary", 25, 121);
+        doc.text(`R${employee.salary?.toLocaleString() || "0"}`, 95, 121, { align: "right" });
+
+        // Hours Worked
+        doc.text("Hours Worked", 25, 128);
+        doc.text(`${employee.hoursWorked || 0}`, 95, 128, { align: "right" });
+
+        // Leave Deductions
+        doc.text("Leave Deductions", 25, 135);
+        doc.text(`${employee.leaveDeductions || 0}`, 95, 135, { align: "right" });
+
+        doc.setDrawColor(22, 78, 99);
+        doc.setLineWidth(0.5);
+        doc.line(25, 138, 95, 138);
+        doc.setFont("helvetica", "bold");
+        doc.text("Total", 25, 143);
+        doc.text(`R${employee.finalSalary?.toLocaleString() || "0"}`, 95, 143, { align: "right" });
+
+        // Deductions Section
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Deductions", 110, 100);
+        doc.setDrawColor(22, 78, 99);
+        doc.setFillColor(240, 248, 255);
+        doc.rect(110, 105, 80, 35, "FD");
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text("Description", 115, 112);
+        doc.text("Amount", 185, 112, { align: "right" });
+        doc.setDrawColor(200, 200, 200);
+        doc.line(115, 114, 185, 114);
+        doc.text("Tax", 115, 121);
+        doc.text("R0", 185, 121, { align: "right" });
+        doc.text("Pension", 115, 128);
+        doc.text("R0", 185, 128, { align: "right" });
+
+        doc.setDrawColor(22, 78, 99);
+        doc.setLineWidth(0.5);
+        doc.line(115, 131, 185, 131);
+        doc.setFont("helvetica", "bold");
+        doc.text("Total", 115, 136);
+        doc.text("R0", 185, 136, { align: "right" });
+
+        // Net Pay
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setFillColor(22, 78, 99);
+        doc.rect(20, 150, 170, 15, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.text(`Net Pay: R${employee.finalSalary?.toLocaleString() || "0"}`, 105, 160, {
+          align: "center",
+        });
+
+        // Footer
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text("Payment Method: Bank Transfer", 20, 180);
+        doc.text(`Payment Date: ${new Date().toLocaleDateString("en-US")}`, 20, 187);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(100, 100, 100);
+        doc.text(
+          "This is a computer-generated payslip and does not require a signature.",
+          105,
+          doc.internal.pageSize.height - 30,
+          { align: "center" }
+        );
+        doc.text("Thank you for your hard work!", 105, doc.internal.pageSize.height - 20, {
+          align: "center",
+        });
+        doc.text(
+          "For inquiries, contact: payroll@yourcompany.com",
+          105,
+          doc.internal.pageSize.height - 10,
+          { align: "center" }
+        );
+
+        doc.save(`payslip_${employee.name.replace(/\s+/g, "_")}.pdf`);
+      } catch (error) {
+        console.error("Error generating payslip:", error);
+        alert("Failed to generate payslip. Please try again.");
+      }
     },
-  }
+    openPayslipModal(employee) {
+      this.selectedEmployee = employee;
+      this.dialog = true;
+    },
+  },
 };
 </script>
 
@@ -58,50 +209,47 @@ export default {
     <div class="text-subtitle-1 text-medium-emphasis mb-6">
       Manage employee compensation and benefits
     </div>
-
     <v-row no-gutters class="mb-6">
       <v-col cols="12" sm="4" class="pr-sm-2 mb-4">
-        <v-card class="pa-4 d-flex align-center h-100" style="border-radius: 8px">
+        <v-card class="pa-4 d-flex align-center h-100">
           <v-avatar color="primary" size="48" class="mr-4">
             <v-icon>mdi-currency-usd</v-icon>
           </v-avatar>
           <div>
             <div class="text-caption">Total Payroll</div>
-            <div class="text-h5 font-weight-bold">${{ totalPayroll.toLocaleString() }}</div>
+            <div class="text-h5 font-weight-bold">R{{ totalPayroll.toLocaleString() }}</div>
           </div>
-          <v-spacer></v-spacer>
-          <v-chip color="success" variant="tonal" class="ml-2" size="small">
-            <v-icon left small>mdi-currency-usd</v-icon>
-            Paid
-          </v-chip>
+          <v-spacer />
+          <v-chip size="small" color="success" variant="tonal"> Paid </v-chip>
         </v-card>
       </v-col>
       <v-col cols="12" sm="4" class="px-sm-2 mb-4">
-        <v-card class="pa-4 d-flex align-center h-100" style="border-radius: 8px">
+        <v-card class="pa-4 d-flex align-center h-100">
           <v-avatar color="primary" size="48" class="mr-4">
             <v-icon>mdi-account-multiple</v-icon>
           </v-avatar>
           <div>
             <div class="text-caption">Employees Processed</div>
-            <div class="text-h5 font-weight-bold">{{ employeesProcessed }}</div>
+            <div class="text-h5 font-weight-bold">
+              {{ employeesProcessed }}
+            </div>
           </div>
         </v-card>
       </v-col>
       <v-col cols="12" sm="4" class="pl-sm-2 mb-4">
-        <v-card class="pa-4 d-flex align-center h-100" style="border-radius: 8px">
+        <v-card class="pa-4 d-flex align-center h-100">
           <v-avatar color="primary" size="48" class="mr-4">
             <v-icon>mdi-calendar</v-icon>
           </v-avatar>
           <div>
             <div class="text-caption">Next Payroll</div>
-            <div class="text-h5 font-weight-bold">{{ nextPayrollDate }}</div>
+            <div class="text-h5 font-weight-bold">
+              {{ nextPayrollDate }}
+            </div>
           </div>
-          <v-spacer></v-spacer>
-          <v-icon color="warning" size="24">mdi-calendar-clock</v-icon>
         </v-card>
       </v-col>
     </v-row>
-
     <div class="text-h6 font-weight-medium mb-4">Payroll Actions</div>
     <v-row justify="center" no-gutters class="mb-6">
       <v-col cols="12" md="10">
@@ -145,99 +293,160 @@ export default {
         </v-row>
       </v-col>
     </v-row>
-
-    <div class="mb-4">
-      <div class="text-h6 font-weight-medium mb-3">Employee Payroll</div>
-      <v-card elevation="1" rounded="lg">
-        <v-card-text class="pa-0">
-          <div class="pa-4 pb-2">
-            <v-text-field
-              v-model="search"
-              append-icon="mdi-magnify"
-              label="Search employees"
-              single-line
-              hide-details
-              clearable
-              density="compact"
-              variant="outlined"
-            ></v-text-field>
-          </div>
-
-          <v-data-table
-            :headers="headers"
-            :items="itemsWithUniqueIds"
-            :search="search"
-            :items-per-page="itemsPerPage"
-            item-key="uniqueId"
-            :mobile-breakpoint="0"
-            density="comfortable"
-            class="elevation-0"
-            :footer-props="{
-              'items-per-page-options': [10, 20, 30],
-              'show-current-page': true,
-              'show-first-last-page': true
-            }"
-          >
-            <template #item.name="{ item }">
-              <div class="d-flex align-center py-2">
-                <v-avatar size="36" class="me-3" color="primary">
-                  <span class="white--text">{{ item.name.charAt(0) }}</span>
-                </v-avatar>
-                <div class="font-weight-medium">{{ item.name }}</div>
-              </div>
-            </template>
-
-            <template #item.department="{ item }">
-              <v-chip size="small" color="blue" text-color="white">
-                {{ item.department }}
-              </v-chip>
-            </template>
-
-            <template #item.actions="{ item }">
-              <v-btn
-                size="small"
-                color="primary"
-                variant="flat"
-                @click="generatePayslip(item)"
-                class="text-none"
-              >
-                Generate Payslip
-              </v-btn>
-            </template>
-
-            <template #item="{ item }" v-if="$vuetify.display.mobile">
-  <tr>
-    <td colspan="4" class="pa-2">
-      <div class="d-flex align-center">
-        <v-avatar size="40" class="me-3" color="primary">
-          <span class="white--text">{{ item.name.charAt(0) }}</span>
-        </v-avatar>
-        <div class="grow">
-          <div class="font-weight-medium">{{ item.name }}</div>
-          <div class="text-caption d-flex justify-space-evenly mt-1">
-            <span>{{ item.position }}</span>
-            <v-chip size="x-small" color="blue" text-color="white">
-              {{ item.department }}
-            </v-chip>
-          </div>
-        </div>
-        <v-btn
-          size="small"
-          color="primary"
-          variant="flat"
-          @click="generatePayslip(item)"
-          class="ml-2 text-none"
-        >
-          Generate
-        </v-btn>
+    <v-card elevation="1" rounded="lg">
+      <div class="pa-4 pb-2">
+        <v-text-field
+          v-model="search"
+          append-icon="mdi-magnify"
+          label="Search employees"
+          hide-details
+          clearable
+          density="compact"
+          variant="outlined"
+        />
       </div>
-    </td>
-  </tr>
-</template>
-          </v-data-table>
+      <v-data-table
+        fixed-header
+        height="600"
+        :headers="headers"
+        :items="itemsWithUniqueIds"
+        :search="search"
+        :items-per-page="itemsPerPage"
+        item-key="uniqueId"
+        density="comfortable"
+        class="elevation-0"
+        :footer-props="{
+          'items-per-page-options': [10, 20, 30],
+          'show-current-page': true,
+          'show-first-last-page': true,
+        }"
+      >
+        <template #item.name="{ item }">
+          <div class="d-flex align-center py-2">
+            <v-avatar size="36" class="me-3" color="primary">
+              <span class="text-white font-weight-bold">
+                {{ item.name.charAt(0) }}
+              </span>
+            </v-avatar>
+            <div class="font-weight-medium">
+              {{ item.name }}
+            </div>
+          </div>
+        </template>
+        <template #item.department="{ item }">
+          <v-chip size="small" color="blue" variant="flat">
+            {{ item.department }}
+          </v-chip>
+        </template>
+        <template #item.actions="{ item }">
+          <div class="d-flex justify-center">
+            <v-btn
+              size="small"
+              color="primary"
+              variant="flat"
+              class="text-none"
+              @click="generatePayslip(item)"
+            >
+              Download Payslip
+            </v-btn>
+            <v-btn
+              size="small"
+              color="primary"
+              variant="flat"
+              class="text-none ml-2"
+              @click="openPayslipModal(item)"
+            >
+              View Payslip
+            </v-btn>
+          </div>
+        </template>
+      </v-data-table>
+    </v-card>
+
+    <v-dialog v-model="dialog" transition="dialog-bottom-transition" fullscreen>
+      <v-card>
+        <v-toolbar>
+          <v-btn icon="mdi-close" @click="dialog = false"></v-btn>
+          <v-toolbar-title>Payslip for {{ selectedEmployee?.name }}</v-toolbar-title>
+          <v-spacer></v-spacer>
+          <v-btn
+            color="primary"
+            @click="generatePayslip(selectedEmployee)"
+          >
+            Download PDF
+          </v-btn>
+        </v-toolbar>
+        <v-card-text class="pa-4">
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-card class="pa-4 mb-4">
+                <v-card-title class="text-h6">Employee Information</v-card-title>
+                <v-list>
+                  <v-list-item>
+                    <v-list-item-title>Employee ID</v-list-item-title>
+                    <v-list-item-subtitle>{{ selectedEmployee?.employeeId }}</v-list-item-subtitle>
+                  </v-list-item>
+                  <v-list-item>
+                    <v-list-item-title>Name</v-list-item-title>
+                    <v-list-item-subtitle>{{ selectedEmployee?.name }}</v-list-item-subtitle>
+                  </v-list-item>
+                  <v-list-item>
+                    <v-list-item-title>Position</v-list-item-title>
+                    <v-list-item-subtitle>{{ selectedEmployee?.position }}</v-list-item-subtitle>
+                  </v-list-item>
+                  <v-list-item>
+                    <v-list-item-title>Department</v-list-item-title>
+                    <v-list-item-subtitle>{{ selectedEmployee?.department }}</v-list-item-subtitle>
+                  </v-list-item>
+                </v-list>
+              </v-card>
+
+              <v-card class="pa-4">
+                <v-card-title class="text-h6">Attendance Summary</v-card-title>
+                <v-list>
+                  <v-list-item>
+                    <v-list-item-title>Total Hours Worked</v-list-item-title>
+                    <v-list-item-subtitle>{{ selectedEmployee?.hoursWorked || 0 }}</v-list-item-subtitle>
+                  </v-list-item>
+                  <v-list-item>
+                    <v-list-item-title>Leave Deductions</v-list-item-title>
+                    <v-list-item-subtitle>{{ selectedEmployee?.leaveDeductions || 0 }}</v-list-item-subtitle>
+                  </v-list-item>
+                </v-list>
+              </v-card>
+            </v-col>
+
+            <v-col cols="12" md="6">
+              <v-card class="pa-4">
+                <v-card-title class="text-h6">Payroll Information</v-card-title>
+                <v-list>
+                  <v-list-item>
+                    <v-list-item-title>Basic Salary</v-list-item-title>
+                    <v-list-item-subtitle>R{{ selectedEmployee?.salary?.toLocaleString() || "0" }}</v-list-item-subtitle>
+                  </v-list-item>
+                  <v-list-item>
+                    <v-list-item-title>Hours Worked</v-list-item-title>
+                    <v-list-item-subtitle>{{ selectedEmployee?.hoursWorked || 0 }}</v-list-item-subtitle>
+                  </v-list-item>
+                  <v-list-item>
+                    <v-list-item-title>Leave Deductions</v-list-item-title>
+                    <v-list-item-subtitle>{{ selectedEmployee?.leaveDeductions || 0 }}</v-list-item-subtitle>
+                  </v-list-item>
+                  <v-list-item>
+                    <v-list-item-title>Final Salary</v-list-item-title>
+                    <v-list-item-subtitle>R{{ selectedEmployee?.finalSalary?.toLocaleString() || "0" }}</v-list-item-subtitle>
+                  </v-list-item>
+                  <v-list-item>
+                    <v-list-item-title>Net Pay</v-list-item-title>
+                    <v-list-item-subtitle>R{{ selectedEmployee?.finalSalary?.toLocaleString() || "0" }}</v-list-item-subtitle>
+                  </v-list-item>
+                </v-list>
+              </v-card>
+            </v-col>
+          </v-row>
         </v-card-text>
       </v-card>
-    </div>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -245,38 +454,18 @@ export default {
 .v-container {
   max-width: 100%;
 }
-
 .v-card {
   border: 1px solid rgba(0, 0, 0, 0.12);
 }
-
+:deep(.v-data-table__tbody tr td) {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
 :deep(.v-data-table-footer) {
   padding: 8px 16px !important;
-  min-height: 40px !important;
   border-top: 1px solid rgba(0, 0, 0, 0.12);
 }
-
-:deep(.v-data-table-footer__pagination) {
-  margin: 0 !important;
+:deep(.v-data-table__td--actions) {
+  text-align: center;
 }
-
-@media (max-width: 600px) {
-  .text-h4 {
-    font-size: 1.5rem !important;
-  }
-  .text-h6 {
-    font-size: 1rem !important;
-  }
-  .v-data-table {
-    width: 100%;
-  }
-  .v-data-table__mobile-table-row td {
-    padding: 12px;
-  }
-  .v-btn {
-    min-width: unset;
-    padding: 0 12px;
-  }
-}
-
 </style>
