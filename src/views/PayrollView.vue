@@ -1,25 +1,23 @@
 <script>
-import HomePage from "@/components/HomePage.vue";
 import { mapState } from "vuex";
-
+import TableList from "../components/TableList.vue";
 
 export default {
-  name: "HomeView",
+  name: "PayrollView",
   components: {
-    HomePage,
+    TableList,
   },
   computed: {
-    ...mapState(["payroll", "employees", "attendance"]),
+    ...mapState(["payroll", "employees"]),
   },
 };
 </script>
 
 <template>
   <div>
-    <HomePage
+    <TableList
       :payrollData="payroll"
       :employees="employees"
-      :attendance="attendance"
     />
   </div>
 </template>

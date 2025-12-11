@@ -29,7 +29,11 @@ export default {
     <router-view />
   </div>
   <LoginPage v-else />
+  <v-app>
+    <NavBar>
+      <router-view />
+    </NavBar>
+  </v-app>
 </template>
 
-<style>
-</style>
+
