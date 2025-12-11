@@ -14,7 +14,10 @@ export default {
         { title: "Name", key: "name", sortable: true },
         { title: "Position", key: "position", sortable: true },
         { title: "Department", key: "department", sortable: true },
-        { title: "Hourly Rate", key: "hourlyRate", sortable: true },
+        { title: "Base Salary", key: "baseSalary", sortable: true },
+        { title: "Final Salary", key: "finalSalary", sortable: true },
+         { title: "Hourly Rate", key: "hourlyRate", sortable: true },
+        
         { title: "Payslip", key: "actions", sortable: false, align: "center" },
       ],
       search: "",
@@ -27,21 +30,36 @@ export default {
     itemsWithUniqueIds() {
       return (this.employees || []).map((employee) => {
         const payrollInfo = this.payrollData?.find(p => p.employeeId === employee.employeeId) || {};
-        const totalHours = employee.attendance
-          ? employee.attendance.reduce((total, day) => total + (day.hoursWorked || 0), 0)
-          : payrollInfo.hoursWorked || 0;
+        
         const hourlyRate = payrollInfo.hourlyRate || (employee.salary / 160);
-        const finalSalary = (hourlyRate * (payrollInfo.hoursWorked || 0)) - (payrollInfo.leaveDeductions || 0);
+        
+        // Base salary from employee record
+        const baseSalary = employee.salary || 0;
+        
+        // Final salary from payroll data
+        const finalSalary = payrollInfo.finalSalary || baseSalary;
+        
+        // Number of leave days from payroll data
+        const leaveDays = payrollInfo.leaveDeductions || 0;
+        
+        // Calculate leave deduction amount as: Base Salary - Final Salary
+        const leaveDeductionAmount = baseSalary - finalSalary;
+        
+        // Hours worked from payroll data
+        const hoursWorked = payrollInfo.hoursWorked || 0;
+        
         return {
           ...employee,
           ...payrollInfo,
           uniqueId: employee.employeeId
             ? `emp-${employee.employeeId}`
             : `emp-${Math.random().toString(36).substr(2, 9)}`,
-          totalHours: totalHours,
-          hoursWorked: payrollInfo.hoursWorked || 0,
+          baseSalary: baseSalary,
           hourlyRate: hourlyRate,
           finalSalary: finalSalary,
+          leaveDays: leaveDays,
+          leaveDeductionAmount: leaveDeductionAmount,
+          hoursWorked: hoursWorked,
         };
       });
     },
@@ -65,6 +83,8 @@ export default {
       if (!employee) return;
       try {
         const doc = new jsPDF();
+        
+        // Header
         doc.setFontSize(18);
         doc.setFont("helvetica", "bold");
         doc.text("Your Company Name", 105, 15, { align: "center" });
@@ -72,14 +92,21 @@ export default {
         doc.setFont("helvetica", "normal");
         doc.text("123 Company Address, City, Country", 105, 22, { align: "center" });
         doc.text("Payroll Department", 105, 29, { align: "center" });
+        
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
         doc.text("PAYSLIP", 105, 40, { align: "center" });
+        
         doc.setDrawColor(0, 0, 0);
         doc.setLineWidth(0.5);
         doc.line(20, 45, 190, 45);
+        
+        // Employee Information
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
+        doc.text("Hourly Rate", 25, 121);
+        doc.text(`R${employee.hourlyRate?.toLocaleString() || "0"}`, 95, 121, { align: "right" });
+
         doc.text(`Employee ID: ${employee.employeeId || "N/A"}`, 20, 55);
         doc.text(`Name: ${employee.name}`, 20, 62);
         doc.text(`Position: ${employee.position}`, 20, 69);
@@ -92,12 +119,15 @@ export default {
           20,
           83
         );
+        
+        // Earnings Section
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.text("Earnings", 20, 100);
         doc.setDrawColor(22, 78, 99);
         doc.setFillColor(240, 248, 255);
-        doc.rect(20, 105, 80, 55, "FD");
+        doc.rect(20, 105, 80, 45, "FD");
+        
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         doc.text("Description", 25, 112);
@@ -105,54 +135,66 @@ export default {
         doc.setDrawColor(200, 200, 200);
         doc.line(25, 114, 95, 114);
 
-        doc.text("Hourly Rate", 25, 121);
+        doc.text("Base Salary", 25, 121);
+        doc.text(`R${employee.baseSalary?.toLocaleString() || "0"}`, 95, 121, { align: "right" });
+
+          doc.text("Hourly Rate", 25, 121);
         doc.text(`R${employee.hourlyRate?.toLocaleString() || "0"}`, 95, 121, { align: "right" });
 
-        doc.text("Hours Worked", 25, 128);
-        doc.text(`${employee.hoursWorked || 0}`, 95, 128, { align: "right" });
-
-        doc.text("Gross Pay", 25, 135);
-        doc.text(`R${(employee.hourlyRate * employee.hoursWorked)?.toLocaleString() || "0"}`, 95, 135, { align: "right" });
-
-        doc.text("Leave Deductions", 25, 142);
-        doc.text(`R${employee.leaveDeductions?.toLocaleString() || "0"}`, 95, 142, { align: "right" });
+        doc.text("Leave Days", 25, 135);
+        doc.text(`${employee.leaveDays || 0} days`, 95, 135, { align: "right" });
 
         doc.setDrawColor(22, 78, 99);
         doc.setLineWidth(0.5);
-        doc.line(25, 145, 95, 145);
+        doc.line(25, 140, 95, 140);
         doc.setFont("helvetica", "bold");
-        doc.text("Total", 25, 150);
-        doc.text(`R${employee.finalSalary?.toLocaleString() || "0"}`, 95, 150, { align: "right" });
+        doc.text("Gross Pay", 25, 145);
+        doc.text(`R${employee.baseSalary?.toLocaleString() || "0"}`, 95, 145, { align: "right" });
 
+        // Deductions Section
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.text("Deductions", 110, 100);
         doc.setDrawColor(22, 78, 99);
         doc.setFillColor(240, 248, 255);
-        doc.rect(110, 105, 80, 35, "FD");
+        doc.rect(110, 105, 80, 45, "FD");
+        
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         doc.text("Description", 115, 112);
         doc.text("Amount", 185, 112, { align: "right" });
         doc.setDrawColor(200, 200, 200);
         doc.line(115, 114, 185, 114);
-        doc.text("Tax", 115, 121);
-        doc.text("R0", 185, 121, { align: "right" });
-        doc.text("Pension", 115, 128);
-        doc.text("R0", 185, 128, { align: "right" });
+        
+        doc.text("Leave Deductions", 115, 121);
+        doc.text(`R${employee.leaveDeductionAmount?.toLocaleString() || "0"}`, 185, 121, { align: "right" });
+        
+        doc.text(`(${employee.leaveDays || 0} days)`, 115, 126);
+        doc.text("", 185, 126, { align: "right" });
+        
+        doc.text("Tax", 115, 131);
+        doc.text("R0", 185, 131, { align: "right" });
+        
         doc.setDrawColor(22, 78, 99);
         doc.setLineWidth(0.5);
-        doc.line(115, 131, 185, 131);
+        doc.line(115, 136, 185, 136);
         doc.setFont("helvetica", "bold");
-        doc.text("Total", 115, 136);
-        doc.text("R0", 185, 136, { align: "right" });
+        doc.text("Total Deductions", 115, 141);
+        doc.text(`R${employee.leaveDeductionAmount?.toLocaleString() || "0"}`, 185, 141, { align: "right" });
 
+        // Salary Calculation
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
-        doc.text("Salary Calculation", 20, 165);
+        doc.text("Salary Calculation", 20, 160);
         doc.setFont("helvetica", "normal");
-        doc.text(`(R${employee.hourlyRate?.toLocaleString() || "0"} x ${employee.hoursWorked || 0} hours) - R${employee.leaveDeductions?.toLocaleString() || "0"} = R${employee.finalSalary?.toLocaleString() || "0"}`, 20, 172);
+        doc.text(
+          `Base Salary (R${employee.baseSalary?.toLocaleString() || "0"}) - Leave Deductions (R${employee.leaveDeductionAmount?.toLocaleString() || "0"} for ${employee.leaveDays || 0} days) = R${employee.finalSalary?.toLocaleString() || "0"}`,
+          20,
+          167,
+          { maxWidth: 170 }
+        );
 
+        // Net Pay
         doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
         doc.setFillColor(22, 78, 99);
@@ -162,10 +204,14 @@ export default {
           align: "center",
         });
         doc.setTextColor(0, 0, 0);
+        
+        // Payment Details
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         doc.text("Payment Method: Bank Transfer", 20, 210);
         doc.text(`Payment Date: ${new Date().toLocaleDateString("en-US")}`, 20, 217);
+        
+        // Footer
         doc.setFontSize(8);
         doc.setFont("helvetica", "italic");
         doc.setTextColor(100, 100, 100);
@@ -184,6 +230,7 @@ export default {
           doc.internal.pageSize.height - 10,
           { align: "center" }
         );
+        
         doc.save(`payslip_${employee.name.replace(/\s+/g, "_")}.pdf`);
       } catch (error) {
         console.error("Error generating payslip:", error);
@@ -204,6 +251,8 @@ export default {
     <div class="text-subtitle-1 text-medium-emphasis mb-6">
       Manage employee compensation and benefits
     </div>
+    
+    <!-- Summary Cards -->
     <v-row no-gutters class="mb-6">
       <v-col cols="12" sm="4" class="pr-sm-2 mb-4">
         <v-card class="pa-4 d-flex align-center h-100">
@@ -215,7 +264,7 @@ export default {
             <div class="text-h5 font-weight-bold">R{{ totalPayroll.toLocaleString() }}</div>
           </div>
           <v-spacer />
-          <v-chip size="small" color="success" variant="tonal"> Paid </v-chip>
+          <v-chip size="small" color="success" variant="tonal">Paid</v-chip>
         </v-card>
       </v-col>
       <v-col cols="12" sm="4" class="px-sm-2 mb-4">
@@ -225,9 +274,7 @@ export default {
           </v-avatar>
           <div>
             <div class="text-caption">Employees Processed</div>
-            <div class="text-h5 font-weight-bold">
-              {{ employeesProcessed }}
-            </div>
+            <div class="text-h5 font-weight-bold">{{ employeesProcessed }}</div>
           </div>
         </v-card>
       </v-col>
@@ -238,13 +285,10 @@ export default {
           </v-avatar>
           <div>
             <div class="text-caption">Next Payroll</div>
-            <div class="text-h5 font-weight-bold">
-              {{ nextPayrollDate }}
-            </div>
+            <div class="text-h5 font-weight-bold">{{ nextPayrollDate }}</div>
           </div>
         </v-card>
       </v-col>
-      <!-- New Payroll Calculation Card -->
       <v-col cols="12" sm="4" class="pr-sm-2 mb-4">
         <v-card class="pa-4 d-flex align-center h-100">
           <v-avatar color="primary" size="48" class="mr-4">
@@ -254,11 +298,12 @@ export default {
             <div class="text-caption">Salary Calculation</div>
             <div class="text-body-2">
               (Hourly Rate x Hours Worked) - Deductions
-            </div>
-          </div>
+            </div></div>
         </v-card>
       </v-col>
     </v-row>
+    
+    <!-- Payroll Actions -->
     <div class="text-h6 font-weight-medium mb-4">Payroll Actions</div>
     <v-row justify="center" no-gutters class="mb-6">
       <v-col cols="12" md="10">
@@ -302,6 +347,8 @@ export default {
         </v-row>
       </v-col>
     </v-row>
+    
+    <!-- Employee Table -->
     <v-card elevation="1" rounded="lg">
       <div class="pa-4 pb-2">
         <v-text-field
@@ -337,9 +384,7 @@ export default {
                 {{ item.name.charAt(0) }}
               </span>
             </v-avatar>
-            <div class="font-weight-medium">
-              {{ item.name }}
-            </div>
+            <div class="font-weight-medium">{{ item.name }}</div>
           </div>
         </template>
         <template #item.department="{ item }">
@@ -347,11 +392,14 @@ export default {
             {{ item.department }}
           </v-chip>
         </template>
-        <template #item.hourlyRate="{ item }">
-          R{{ item.hourlyRate?.toLocaleString() || "0" }}
+        <template #item.baseSalary="{ item }">
+          R{{ item.baseSalary?.toLocaleString() || "0" }}
+        </template>
+        <template #item.finalSalary="{ item }">
+          <span class="font-weight-bold">R{{ item.finalSalary?.toLocaleString() || "0" }}</span>
         </template>
         <template #item.actions="{ item }">
-          <div class="d-flex justify-center">
+          <div class="d-flex justify-center gap-2">
             <v-btn
               size="small"
               color="primary"
@@ -359,31 +407,30 @@ export default {
               class="text-none"
               @click="generatePayslip(item)"
             >
-              Download Payslip
+              Download
             </v-btn>
             <v-btn
               size="small"
               color="primary"
-              variant="flat"
-              class="text-none ml-2"
+              variant="outlined"
+              class="text-none"
               @click="openPayslipModal(item)"
             >
-              View Payslip
+              View
             </v-btn>
           </div>
         </template>
       </v-data-table>
     </v-card>
+    
+    <!-- Payslip Modal -->
     <v-dialog v-model="dialog" transition="dialog-bottom-transition" fullscreen>
       <v-card>
         <v-toolbar>
           <v-btn icon="mdi-close" @click="dialog = false"></v-btn>
           <v-toolbar-title>Payslip for {{ selectedEmployee?.name }}</v-toolbar-title>
           <v-spacer></v-spacer>
-          <v-btn
-            color="primary"
-            @click="generatePayslip(selectedEmployee)"
-          >
+          <v-btn color="primary" @click="generatePayslip(selectedEmployee)">
             Download PDF
           </v-btn>
         </v-toolbar>
@@ -412,47 +459,64 @@ export default {
                 </v-list>
               </v-card>
               <v-card class="pa-4">
-                <v-card-title class="text-h6">Attendance Summary</v-card-title>
+                <v-card-title class="text-h6">Work Summary</v-card-title>
                 <v-list>
                   <v-list-item>
-                    <v-list-item-title>Total Hours Worked</v-list-item-title>
-                    <v-list-item-subtitle>{{ selectedEmployee?.hoursWorked || 0 }}</v-list-item-subtitle>
+                    <v-list-item-title>Hours Worked</v-list-item-title>
+                    <v-list-item-subtitle>{{ selectedEmployee?.hoursWorked || 0 }} hours</v-list-item-subtitle>
                   </v-list-item>
                   <v-list-item>
-                    <v-list-item-title>Leave Deductions</v-list-item-title>
-                    <v-list-item-subtitle>{{ selectedEmployee?.leaveDeductions || 0 }}</v-list-item-subtitle>
+                    <v-list-item-title>Leave Days Taken</v-list-item-title>
+                    <v-list-item-subtitle>{{ selectedEmployee?.leaveDays || 0 }} days</v-list-item-subtitle>
+                  </v-list-item>
+                  <v-list-item>
+                    <v-list-item-title>Leave Deduction Amount</v-list-item-title>
+                    <v-list-item-subtitle>R{{ selectedEmployee?.leaveDeductionAmount?.toLocaleString() || "0" }}</v-list-item-subtitle>
                   </v-list-item>
                 </v-list>
               </v-card>
             </v-col>
             <v-col cols="12" md="6">
               <v-card class="pa-4">
-                <v-card-title class="text-h6">Payroll Information</v-card-title>
+                <v-card-title class="text-h6">Payroll Breakdown</v-card-title>
                 <v-list>
                   <v-list-item>
-                    <v-list-item-title>Hourly Rate</v-list-item-title>
-                    <v-list-item-subtitle>R{{ selectedEmployee?.hourlyRate?.toLocaleString() || "0" }}</v-list-item-subtitle>
+                    <v-list-item-title>Base Salary</v-list-item-title>
+                    <v-list-item-subtitle class="text-h6">
+                      R{{ selectedEmployee?.baseSalary?.toLocaleString() || "0" }}
+                    </v-list-item-subtitle>
+                  </v-list-item>
+                  <v-divider class="my-2"></v-divider>
+                  <v-list-item>
+                    <v-list-item-title>Deductions</v-list-item-title>
                   </v-list-item>
                   <v-list-item>
-                    <v-list-item-title>Hours Worked</v-list-item-title>
-                    <v-list-item-subtitle>{{ selectedEmployee?.hoursWorked || 0 }}</v-list-item-subtitle>
+                    <v-list-item-title class="ml-4">Leave Deductions</v-list-item-title>
+                    <v-list-item-subtitle class="text-error">
+                      -R{{ selectedEmployee?.leaveDeductionAmount?.toLocaleString() || "0" }}
+                    </v-list-item-subtitle>
                   </v-list-item>
                   <v-list-item>
-                    <v-list-item-title>Gross Pay</v-list-item-title>
-                    <v-list-item-subtitle>R{{ (selectedEmployee?.hourlyRate * selectedEmployee?.hoursWorked)?.toLocaleString() || "0" }}</v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title>Leave Deductions</v-list-item-title>
-                    <v-list-item-subtitle>R{{ selectedEmployee?.leaveDeductions?.toLocaleString() || "0" }}</v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title>Final Salary</v-list-item-title>
-                    <v-list-item-subtitle>R{{ selectedEmployee?.finalSalary?.toLocaleString() || "0" }}</v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title>Salary Calculation</v-list-item-title>
+                    <v-list-item-title class="ml-4 text-caption">Leave Days</v-list-item-title>
                     <v-list-item-subtitle>
-                      (R{{ selectedEmployee?.hourlyRate?.toLocaleString() || "0" }} x {{ selectedEmployee?.hoursWorked || 0 }} hours) - R{{ selectedEmployee?.leaveDeductions?.toLocaleString() || "0" }} = R{{ selectedEmployee?.finalSalary?.toLocaleString() || "0" }}
+                      {{ selectedEmployee?.leaveDays || 0 }} days
+                    </v-list-item-subtitle>
+                  </v-list-item>
+                  <v-divider class="my-2"></v-divider>
+                  <v-list-item>
+                    <v-list-item-title class="font-weight-bold">Net Pay</v-list-item-title>
+                    <v-list-item-subtitle class="text-h5 text-success font-weight-bold">
+                      R{{ selectedEmployee?.finalSalary?.toLocaleString() || "0" }}
+                    </v-list-item-subtitle>
+                  </v-list-item>
+                  <v-divider class="my-3"></v-divider>
+                  <v-list-item>
+                    <v-list-item-title>Calculation</v-list-item-title>
+                    <v-list-item-subtitle>
+                      R{{ selectedEmployee?.baseSalary?.toLocaleString() || "0" }} - 
+                      R{{ selectedEmployee?.leaveDeductionAmount?.toLocaleString() || "0" }} 
+                      ({{ selectedEmployee?.leaveDays || 0 }} days) = 
+                      R{{ selectedEmployee?.finalSalary?.toLocaleString() || "0" }}
                     </v-list-item-subtitle>
                   </v-list-item>
                 </v-list>
@@ -482,5 +546,8 @@ export default {
 }
 :deep(.v-data-table__td--actions) {
   text-align: center;
+}
+.gap-2 {
+  gap: 8px;
 }
 </style>
