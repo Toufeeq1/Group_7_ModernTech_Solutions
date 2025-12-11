@@ -23,4 +23,11 @@ export default defineConfig([
   js.configs.recommended,
   ...pluginVue.configs['flat/essential'],
   ...pluginOxlint.configs['flat/recommended'],
+
+
+  {
+    rules: {
+      'vue/valid-v-slot': 'off',
+    },
+  },
 ])

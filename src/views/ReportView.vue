@@ -1,25 +1,24 @@
 <script>
-import HomePage from "@/components/HomePage.vue";
 import { mapState } from "vuex";
 
-
+import ReportsData from "../components/ReportsData.vue";
 export default {
-  name: "HomeView",
+  name: "ReportView",
   components: {
-    HomePage,
+    ReportsData,
   },
   computed: {
-    ...mapState(["payroll", "employees", "attendance"]),
+    ...mapState(["employees", "attendance", "payroll"]),
   },
 };
 </script>
 
 <template>
   <div>
-    <HomePage
-      :payrollData="payroll"
+    <ReportsData
       :employees="employees"
       :attendance="attendance"
+      :payroll="payroll"
     />
   </div>
 </template>
