@@ -65,6 +65,9 @@ The **Payroll Management System** is a web application that helps organizations 
    npm install
    or
    yarn install
+3. **Run Project**
+   ```bash
+   npm run dev
 ## Features
 - Payslip Generation: Download payslips as PDFs.
 - Data Visualization: View payroll analytics with Chart.js.
