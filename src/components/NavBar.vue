@@ -14,9 +14,11 @@ export default {
         { icon: "mdi-account-group", title: "Employees", to: "/Employees" },
         { icon: "mdi-calendar-check", title: "Attendance", to: "#" },
         { icon: "mdi-file-document", title: "Documents", to: "#" },
+        { icon: "mdi-chart-line", title: "Performace", to: "/Performace" },
         { icon: "mdi-chart-bar", title: "Reports", to: "#" },
         { icon: "mdi-cash", title: "Payroll", to: "/Payroll" },
         { icon: "mdi-calendar", title: "Leave", to: "#" },
+        
       ],
 
       userMenuItems: [
