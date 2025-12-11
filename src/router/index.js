@@ -42,7 +42,7 @@ const router = createRouter({
       path: '/Reports',
       name: 'Reports',
       component: ReportView,
-    }
+    },
     {
       path: '/Leave',
       name: 'Leave',
