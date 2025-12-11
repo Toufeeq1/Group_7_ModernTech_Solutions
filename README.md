@@ -68,6 +68,9 @@ The **Payroll Management System** is a web application that helps organizations 
 3. **Run Project**
    ```bash
    npm run dev
+
+4. **PassWord**
+   - IF Invalid email or password use admin@example.com and password123
 ## Features
 - Payslip Generation: Download payslips as PDFs.
 - Data Visualization: View payroll analytics with Chart.js.
