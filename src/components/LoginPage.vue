@@ -25,7 +25,7 @@
           setTimeout(() => {
             this.loading = false;
             this.setLoggedIn(true);
-            this.$router.push('/dashboard');
+            this.$router.push('/');
             alert(`Logged in with email: ${this.email}`);
           }, 2000);
         } else {

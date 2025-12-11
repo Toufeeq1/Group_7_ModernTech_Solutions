@@ -25,15 +25,13 @@ export default {
 
 <template>
   <div v-if="isLoggedIn">
-    <NavBar />
-    <router-view />
-  </div>
-  <LoginPage v-else />
-  <v-app>
+    <v-app>
     <NavBar>
       <router-view />
     </NavBar>
   </v-app>
+  </div>
+  <LoginPage v-else />
 </template>
 
 
