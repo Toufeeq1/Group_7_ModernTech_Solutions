@@ -119,11 +119,11 @@ export default {
       navItems: [
         { icon: "mdi-view-dashboard", title: "Dashboard", to: "/" },
         { icon: "mdi-account-group", title: "Employees", to: "#" },
-        { icon: "mdi-calendar-check", title: "Attendance", to: "#" },
+        { icon: "mdi-calendar-check", title: "Attendance", to: "Attendance" },
         { icon: "mdi-file-document", title: "Documents", to: "#" },
         { icon: "mdi-chart-bar", title: "Reports", to: "#" },
         { icon: "mdi-cash", title: "Payroll", to: "#" },
-        { icon: "mdi-calendar", title: "Leave", to: "#" },
+        { icon: "mdi-calendar", title: "Leave", to: "Leave" },
       ],
       userMenuItems: [
         { icon: "mdi-account", title: "Profile" },
