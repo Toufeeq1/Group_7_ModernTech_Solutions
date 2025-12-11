@@ -1,11 +1,14 @@
 <script>
 import { mapState } from "vuex";
 import { jsPDF } from "jspdf";
+
 export default {
   name: "PayrollView",
+
   props: {
-    payrollData: Array
+    payrollData: Array,
   },
+
   data() {
     return {
       dialog: false,
@@ -16,8 +19,7 @@ export default {
         { title: "Department", key: "department", sortable: true },
         { title: "Base Salary", key: "baseSalary", sortable: true },
         { title: "Final Salary", key: "finalSalary", sortable: true },
-         { title: "Hourly Rate", key: "hourlyRate", sortable: true },
-        
+        { title: "Hourly Rate", key: "hourlyRate", sortable: true },
         { title: "Payslip", key: "actions", sortable: false, align: "center" },
       ],
       search: "",
@@ -25,50 +27,50 @@ export default {
       currentPage: 1,
     };
   },
+
   computed: {
     ...mapState(["employees"]),
+
     itemsWithUniqueIds() {
       return (this.employees || []).map((employee) => {
-        const payrollInfo = this.payrollData?.find(p => p.employeeId === employee.employeeId) || {};
-        
-        const hourlyRate = payrollInfo.hourlyRate || (employee.salary / 160);
-        
-        // Base salary from employee record
+        const payrollInfo =
+          this.payrollData?.find((p) => p.employeeId === employee.employeeId) ||
+          {};
+
+        const hourlyRate = payrollInfo.hourlyRate || employee.salary / 160;
         const baseSalary = employee.salary || 0;
-        
-        // Final salary from payroll data
         const finalSalary = payrollInfo.finalSalary || baseSalary;
-        
-        // Number of leave days from payroll data
         const leaveDays = payrollInfo.leaveDeductions || 0;
-        
-        // Calculate leave deduction amount as: Base Salary - Final Salary
         const leaveDeductionAmount = baseSalary - finalSalary;
-        
-        // Hours worked from payroll data
         const hoursWorked = payrollInfo.hoursWorked || 0;
-        
+
         return {
           ...employee,
           ...payrollInfo,
           uniqueId: employee.employeeId
             ? `emp-${employee.employeeId}`
             : `emp-${Math.random().toString(36).substr(2, 9)}`,
-          baseSalary: baseSalary,
-          hourlyRate: hourlyRate,
-          finalSalary: finalSalary,
-          leaveDays: leaveDays,
-          leaveDeductionAmount: leaveDeductionAmount,
-          hoursWorked: hoursWorked,
+          baseSalary,
+          hourlyRate,
+          finalSalary,
+          leaveDays,
+          leaveDeductionAmount,
+          hoursWorked,
         };
       });
     },
+
     totalPayroll() {
-      return (this.payrollData || []).reduce((sum, employee) => sum + (employee.finalSalary || 0), 0);
+      return (this.payrollData || []).reduce(
+        (sum, e) => sum + (e.finalSalary || 0),
+        0
+      );
     },
+
     employeesProcessed() {
       return (this.employees || []).length;
     },
+
     nextPayrollDate() {
       const now = new Date();
       const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -78,34 +80,43 @@ export default {
       });
     },
   },
+
   methods: {
     generatePayslip(employee) {
       if (!employee) return;
+
       try {
         const doc = new jsPDF();
-        
-        // Header
+
+        //
+        // HEADER
+        //
         doc.setFontSize(18);
         doc.setFont("helvetica", "bold");
         doc.text("Your Company Name", 105, 15, { align: "center" });
+
         doc.setFontSize(12);
         doc.setFont("helvetica", "normal");
-        doc.text("123 Company Address, City, Country", 105, 22, { align: "center" });
+        doc.text(
+          "123 Company Address, City, Country",
+          105,
+          22,
+          { align: "center" }
+        );
         doc.text("Payroll Department", 105, 29, { align: "center" });
-        
+
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
         doc.text("PAYSLIP", 105, 40, { align: "center" });
-        
-        doc.setDrawColor(0, 0, 0);
+
         doc.setLineWidth(0.5);
         doc.line(20, 45, 190, 45);
-        
-        // Employee Information
+
+        //
+        // EMPLOYEE INFO
+        //
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
-        doc.text("Hourly Rate", 25, 121);
-        doc.text(`R${employee.hourlyRate?.toLocaleString() || "0"}`, 95, 121, { align: "right" });
 
         doc.text(`Employee ID: ${employee.employeeId || "N/A"}`, 20, 55);
         doc.text(`Name: ${employee.name}`, 20, 62);
@@ -119,124 +130,164 @@ export default {
           20,
           83
         );
-        
-        // Earnings Section
+
+        //
+        // EARNINGS BOX
+        //
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.text("Earnings", 20, 100);
+
         doc.setDrawColor(22, 78, 99);
         doc.setFillColor(240, 248, 255);
-        doc.rect(20, 105, 80, 45, "FD");
-        
+        doc.rect(20, 105, 80, 50, "FD");
+
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         doc.text("Description", 25, 112);
-        doc.text("Amount", 85, 112, { align: "right" });
-        doc.setDrawColor(200, 200, 200);
+        doc.text("Amount", 95, 112, { align: "right" });
         doc.line(25, 114, 95, 114);
 
         doc.text("Base Salary", 25, 121);
-        doc.text(`R${employee.baseSalary?.toLocaleString() || "0"}`, 95, 121, { align: "right" });
+        doc.text(
+          `R${employee.baseSalary?.toLocaleString() || "0"}`,
+          95,
+          121,
+          { align: "right" }
+        );
 
-          doc.text("Hourly Rate", 25, 121);
-        doc.text(`R${employee.hourlyRate?.toLocaleString() || "0"}`, 95, 121, { align: "right" });
+        doc.text("Hourly Rate", 25, 128);
+        doc.text(
+          `R${employee.hourlyRate?.toLocaleString() || "0"}`,
+          95,
+          128,
+          { align: "right" }
+        );
 
         doc.text("Leave Days", 25, 135);
-        doc.text(`${employee.leaveDays || 0} days`, 95, 135, { align: "right" });
+        doc.text(`${employee.leaveDays || 0} days`, 95, 135, {
+          align: "right",
+        });
 
-        doc.setDrawColor(22, 78, 99);
-        doc.setLineWidth(0.5);
-        doc.line(25, 140, 95, 140);
+        doc.line(25, 142, 95, 142);
+
         doc.setFont("helvetica", "bold");
-        doc.text("Gross Pay", 25, 145);
-        doc.text(`R${employee.baseSalary?.toLocaleString() || "0"}`, 95, 145, { align: "right" });
+        doc.text("Gross Pay", 25, 148);
+        doc.text(
+          `R${employee.baseSalary?.toLocaleString() || "0"}`,
+          95,
+          148,
+          { align: "right" }
+        );
 
-        // Deductions Section
+        //
+        // DEDUCTIONS BOX
+        //
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.text("Deductions", 110, 100);
+
         doc.setDrawColor(22, 78, 99);
         doc.setFillColor(240, 248, 255);
-        doc.rect(110, 105, 80, 45, "FD");
-        
+        doc.rect(110, 105, 80, 50, "FD");
+
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         doc.text("Description", 115, 112);
         doc.text("Amount", 185, 112, { align: "right" });
-        doc.setDrawColor(200, 200, 200);
         doc.line(115, 114, 185, 114);
-        
-        doc.text("Leave Deductions", 115, 121);
-        doc.text(`R${employee.leaveDeductionAmount?.toLocaleString() || "0"}`, 185, 121, { align: "right" });
-        
-        doc.text(`(${employee.leaveDays || 0} days)`, 115, 126);
-        doc.text("", 185, 126, { align: "right" });
-        
-        doc.text("Tax", 115, 131);
-        doc.text("R0", 185, 131, { align: "right" });
-        
-        doc.setDrawColor(22, 78, 99);
-        doc.setLineWidth(0.5);
-        doc.line(115, 136, 185, 136);
-        doc.setFont("helvetica", "bold");
-        doc.text("Total Deductions", 115, 141);
-        doc.text(`R${employee.leaveDeductionAmount?.toLocaleString() || "0"}`, 185, 141, { align: "right" });
 
-        // Salary Calculation
+        doc.text("Leave Deductions", 115, 121);
+        doc.text(
+          `R${employee.leaveDeductionAmount?.toLocaleString() || "0"}`,
+          185,
+          121,
+          { align: "right" }
+        );
+
+        doc.text(`(${employee.leaveDays || 0} days)`, 115, 128);
+
+        doc.text("Tax", 115, 135);
+        doc.text("R0", 185, 135, { align: "right" });
+
+        doc.line(115, 142, 185, 142);
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Total Deductions", 115, 148);
+        doc.text(
+          `R${employee.leaveDeductionAmount?.toLocaleString() || "0"}`,
+          185,
+          148,
+          { align: "right" }
+        );
+
+        //
+        // SALARY CALCULATION
+        //
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
-        doc.text("Salary Calculation", 20, 160);
+        doc.text("Salary Calculation", 20, 165);
+
         doc.setFont("helvetica", "normal");
         doc.text(
-          `Base Salary (R${employee.baseSalary?.toLocaleString() || "0"}) - Leave Deductions (R${employee.leaveDeductionAmount?.toLocaleString() || "0"} for ${employee.leaveDays || 0} days) = R${employee.finalSalary?.toLocaleString() || "0"}`,
+          `Base Salary (R${employee.baseSalary?.toLocaleString() || "0"}) - ` +
+            `Leave Deductions (R${
+              employee.leaveDeductionAmount?.toLocaleString() || "0"
+            } for ${employee.leaveDays || 0} days) = ` +
+            `R${employee.finalSalary?.toLocaleString() || "0"}`,
           20,
-          167,
+          172,
           { maxWidth: 170 }
         );
 
-        // Net Pay
+        //
+        // NET PAY BAR
+        //
         doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
         doc.setFillColor(22, 78, 99);
-        doc.rect(20, 180, 170, 15, "F");
+        doc.rect(20, 185, 170, 15, "F");
         doc.setTextColor(255, 255, 255);
-        doc.text(`Net Pay: R${employee.finalSalary?.toLocaleString() || "0"}`, 105, 190, {
-          align: "center",
-        });
+        doc.text(
+          `Net Pay: R${employee.finalSalary?.toLocaleString() || "0"}`,
+          105,
+          195,
+          { align: "center" }
+        );
         doc.setTextColor(0, 0, 0);
-        
-        // Payment Details
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "normal");
-        doc.text("Payment Method: Bank Transfer", 20, 210);
-        doc.text(`Payment Date: ${new Date().toLocaleDateString("en-US")}`, 20, 217);
-        
-        // Footer
+
+        //
+        // FOOTER
+        //
+        const pageHeight = doc.internal.pageSize.height;
+
         doc.setFontSize(8);
         doc.setFont("helvetica", "italic");
-        doc.setTextColor(100, 100, 100);
         doc.text(
           "This is a computer-generated payslip and does not require a signature.",
           105,
-          doc.internal.pageSize.height - 30,
+          pageHeight - 30,
           { align: "center" }
         );
-        doc.text("Thank you for your hard work!", 105, doc.internal.pageSize.height - 20, {
+        doc.text("Thank you for your hard work!", 105, pageHeight - 20, {
           align: "center",
         });
         doc.text(
           "For inquiries, contact: payroll@yourcompany.com",
           105,
-          doc.internal.pageSize.height - 10,
+          pageHeight - 10,
           { align: "center" }
         );
-        
-        doc.save(`payslip_${employee.name.replace(/\s+/g, "_")}.pdf`);
-      } catch (error) {
-        console.error("Error generating payslip:", error);
-        alert("Failed to generate payslip. Please try again.");
+
+        doc.save(
+          `payslip_${employee.name.replace(/\s+/g, "_")}.pdf`
+        );
+      } catch (e) {
+        console.error(e);
+        alert("Failed to generate payslip");
       }
     },
+
     openPayslipModal(employee) {
       this.selectedEmployee = employee;
       this.dialog = true;
@@ -244,6 +295,7 @@ export default {
   },
 };
 </script>
+
 
 <template>
   <v-container fluid class="pa-4">
