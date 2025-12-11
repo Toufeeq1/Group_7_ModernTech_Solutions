@@ -1,9 +1,25 @@
-<script setup>
-import TheWelcome from '../components/TheWelcome.vue'
+<script>
+import HomePage from "@/components/HomePage.vue";
+import { mapState } from "vuex";
+
+
+export default {
+  name: "HomeView",
+  components: {
+    HomePage,
+  },
+  computed: {
+    ...mapState(["payroll", "employees", "attendance"]),
+  },
+};
 </script>
 
 <template>
-  <main>
-    <TheWelcome />
-  </main>
+  <div>
+    <HomePage
+      :payrollData="payroll"
+      :employees="employees"
+      :attendance="attendance"
+    />
+  </div>
 </template>
