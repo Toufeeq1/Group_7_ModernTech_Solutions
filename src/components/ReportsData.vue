@@ -1,6 +1,5 @@
 <template>
   <v-container fluid class="pa-2 pa-sm-4">
-    <!-- Summary Cards -->
     <v-row>
       <v-col cols="12" sm="6" md="4">
         <v-card class="pa-3 pa-sm-4" elevation="2">
@@ -226,7 +225,7 @@ export default {
       return this.employees.length > 0 ? (total / this.employees.length).toFixed(2) : 0;
     },
     weeklyAttendanceChartData() {
-      // Collect all unique dates from attendance data
+
       const allDates = new Set();
       this.attendance.forEach((employee) => {
         employee.attendance.forEach((record) => {
@@ -234,10 +233,8 @@ export default {
         });
       });
 
-      // Convert to sorted array
       const sortedDates = Array.from(allDates).sort();
 
-      // Count Present and Absent for each date
       const byDay = {};
       sortedDates.forEach((date) => {
         byDay[date] = { Present: 0, Absent: 0 };
@@ -268,7 +265,7 @@ export default {
       };
     },
     payrollComparisonData() {
-      // Match employees with their payroll data
+    
       const employeeNames = [];
       const hoursWorked = [];
       const finalSalaries = [];
