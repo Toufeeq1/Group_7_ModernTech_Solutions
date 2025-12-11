@@ -12,12 +12,11 @@ export default {
       navItems: [
         { icon: "mdi-view-dashboard", title: "Dashboard", to: "/" },
         { icon: "mdi-account-group", title: "Employees", to: "/Employees" },
-        { icon: "mdi-calendar-check", title: "Attendance", to: "#" },
-        { icon: "mdi-file-document", title: "Documents", to: "#" },
+        { icon: "mdi-calendar-check", title: "Attendance", to: "Attendance" },
         { icon: "mdi-chart-line", title: "Performace", to: "/Performace" },
         { icon: "mdi-chart-bar", title: "Reports", to: "/Reports" },
         { icon: "mdi-cash", title: "Payroll", to: "/Payroll" },
-        { icon: "mdi-calendar", title: "Leave", to: "#" },
+        { icon: "mdi-calendar", title: "Leave", to: "Leave" },
         
       ],
 
@@ -255,114 +254,6 @@ export default {
   </v-main>
 </template>
 
-<script>
-export default {
-  name: "NavBar",
-  data() {
-    return {
-      drawer: true,
-      rail: false,
-      railHover: false,
-      elevation: 1,
-      navItems: [
-        { icon: "mdi-view-dashboard", title: "Dashboard", to: "/" },
-        { icon: "mdi-account-group", title: "Employees", to: "#" },
-        { icon: "mdi-calendar-check", title: "Attendance", to: "Attendance" },
-        { icon: "mdi-file-document", title: "Documents", to: "#" },
-        { icon: "mdi-chart-bar", title: "Reports", to: "#" },
-        { icon: "mdi-cash", title: "Payroll", to: "#" },
-        { icon: "mdi-calendar", title: "Leave", to: "Leave" },
-      ],
-      userMenuItems: [
-        { icon: "mdi-account", title: "Profile" },
-        { icon: "mdi-cog", title: "Settings" },
-        { icon: "mdi-logout", title: "Logout" },
-      ],
-    };
-  },
-  computed: {
-    isMobile() {
-      return this.$vuetify.display.mobile;
-    },
-    isTablet() {
-      return this.$vuetify.display.tablet;
-    },
-    sidebarWidth() {
-      if (this.isMobile) return 256;
-      return this.rail ? 72 : 256;
-    },
-    railWidth() {
-      return 72;
-    },
-    searchWidth() {
-      if (this.isMobile) return "160px";
-      if (this.isTablet) return "200px";
-      return "300px";
-    },
-    mainContentClasses() {
-      return {
-        "main-content-collapsed": this.rail && !this.isMobile,
-        "main-content-expanded": !this.rail && !this.isMobile,
-        "main-content-mobile": this.isMobile,
-      };
-    },
-    pageContentClasses() {
-      return {
-        "page-content-with-sidebar": !this.isMobile,
-        "page-content-mobile": this.isMobile,
-      };
-    },
-  },
-  watch: {
-    isMobile: {
-      immediate: true,
-      handler(newValue) {
-        if (newValue) {
-          this.drawer = false;
-          this.rail = false;
-          this.elevation = 2;
-        } else {
-          this.drawer = true;
-          this.elevation = 1;
-        }
-      },
-    },
-    $route() {
-      if (this.isMobile) {
-        this.drawer = false;
-      }
-    },
-  },
-  methods: {
-    isActive(route) {
-      return this.$route.path === route;
-    },
-    toggleRail() {
-      if (this.isMobile) {
-        this.drawer = !this.drawer;
-      } else {
-        this.rail = !this.rail;
-      }
-    },
-    onSidebarHover() {
-      if (this.rail && !this.isMobile) {
-        this.railHover = true;
-      }
-    },
-    onSidebarLeave() {
-      this.railHover = false;
-    },
-    onRailHover() {
-      if (this.rail && !this.isMobile) {
-        this.railHover = true;
-      }
-    },
-    onRailLeave() {
-      this.railHover = false;
-    },
-  },
-};
-</script>
 
 <style scoped>
 .sidebar {
