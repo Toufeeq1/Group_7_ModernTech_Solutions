@@ -1,7 +1,6 @@
 <template>
   <v-container class="pa-2">
 
-    <!-- Leave Balance -->
     <h2 class="mb-4 text-h5 text-sm-h4">Leave Balance</h2>
     <v-row dense>
       <v-col
